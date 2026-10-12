@@ -2854,8 +2854,8 @@ const Game = (() => {
   // saves are namespaced by era so a threekingdoms save never shadows a samguk one
   const eraTag = () => ((typeof ERA !== 'undefined' && ERA.id) || 'threekingdoms');
   const slotKey = (slot) => (slot ? `rotk_save_${eraTag()}_${slot}` : `rotk_save_${eraTag()}`);
-  function save(slot) { try { localStorage.setItem(slotKey(slot), JSON.stringify(S)); return true; } catch (e) { return false; } }
-  function slotInfo(slot) { try { const raw = localStorage.getItem(slotKey(slot)); if (!raw) return null; const j = JSON.parse(raw); const F = j.factions && j.player ? j.factions[j.player] : null; return { label: `${F ? F.name : '방관자'} — ${j.year}년 ${j.month}월`, scenario: j.scenario }; } catch (e) { return null; } }
+  function save(slot) { try { S.savedAt = Date.now(); localStorage.setItem(slotKey(slot), JSON.stringify(S)); return true; } catch (e) { return false; } }
+  function slotInfo(slot) { try { const raw = localStorage.getItem(slotKey(slot)); if (!raw) return null; const j = JSON.parse(raw); const F = j.factions && j.player ? j.factions[j.player] : null; return { label: `${F ? F.name : '방관자'} — ${j.year}년 ${j.month}월`, scenario: j.scenario, savedAt: j.savedAt || 0 }; } catch (e) { return null; } }
   function load(slot) {
     let raw = null;
     try { raw = localStorage.getItem(slotKey(slot)); } catch (e) { return false; }

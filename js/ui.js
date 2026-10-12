@@ -79,12 +79,12 @@ const UI = (() => {
     const applyScenarioText = () => { const sc = SCENARIOS.find((x) => x.id === scenarioId); $('#scenario-title').textContent = sc.title; $('#scenario-intro').textContent = sc.intro; renderStart(); };
     sel.addEventListener('change', () => { scenarioId = sel.value; try { localStorage.setItem(scKey, scenarioId); } catch (e) { /* ignore */ } applyScenarioText(); });
     applyScenarioText();
-    $('#btn-continue').hidden = !Game.hasSave();
-    $('#btn-continue').addEventListener('click', () => { if (Game.load()) { selected = null; showGame(); } else { alert('저장본이 예전 지도의 것이라 불러올 수 없습니다.'); $('#btn-continue').hidden = true; } });
+    refreshContinue();
+    $('#btn-continue').addEventListener('click', () => { if (loadNewest()) { selected = null; showGame(); } else { alert('저장본이 예전 지도의 것이라 불러올 수 없습니다.'); refreshContinue(); } });
     $('#btn-endturn').addEventListener('click', endTurn);
     $('#btn-overview').addEventListener('click', showOverview);
     $('#btn-officers').addEventListener('click', showOfficers);
-    $('#btn-save').addEventListener('click', () => { Game.save(); Game.log('게임을 저장했습니다.', 'sys'); renderLog(); toast('게임을 저장했습니다.'); });
+    $('#btn-save').addEventListener('click', () => { const ok = autosave(); Game.log(ok ? '게임을 저장했습니다.' : '저장에 실패했습니다 (브라우저 저장 공간 확인).', 'sys'); renderLog(); toast(ok ? '게임을 저장했습니다.' : '저장 실패: 저장 공간이 부족합니다.'); });
     $('#btn-menu').addEventListener('click', () => { stopAuto(); showMenu(); });
     $('#btn-diplomacy').addEventListener('click', showDiplomacy);
     $('#btn-objectives').addEventListener('click', showObjectives);
@@ -120,7 +120,7 @@ const UI = (() => {
     $('#more-menu').addEventListener('click', () => toggleMore(false));
     document.addEventListener('click', (e) => { if (!e.target.closest('.tb-actions')) toggleMore(false); });
     $('#btn-legend').addEventListener('click', () => setLegend(!showLegend));
-    $('#btn-hexmaps').addEventListener('click', () => { Game.save(); window.open('hexmaps.html' + (selected ? '#' + selected : ''), '_blank'); });
+    $('#btn-hexmaps').addEventListener('click', () => { autosave(); window.open('hexmaps.html' + (selected ? '#' + selected : ''), '_blank'); });
     $('#toggle-legend').addEventListener('click', () => setLegend(!showLegend));
     $('#btn-cinema').addEventListener('click', toggleCinema);
     $('#cinema-exit').addEventListener('click', toggleCinema);
@@ -194,8 +194,20 @@ const UI = (() => {
     grid.querySelectorAll('.fcard:not(.fcard-npc)').forEach((c) => c.addEventListener('click', () => startGame(c.dataset.fid)));
   }
 
+  // ---------- saves: quick slot + slots 1-3, autosaved every month ----------
+  function refreshContinue() { try { $('#btn-continue').hidden = !(Game.hasSave() || Game.hasSave(1) || Game.hasSave(2) || Game.hasSave(3)); } catch (e) { /* ignore */ } }
+  function autosave() { const ok = Game.save(); refreshContinue(); return ok; }
+  // 이어하기: 빠른 저장·슬롯 중 가장 최근(저장 시각) 저장을 불러온다
+  function loadNewest() {
+    const cands = [undefined, 1, 2, 3].map((s) => ({ slot: s, info: Game.slotInfo(s) })).filter((c) => c.info);
+    cands.sort((a, b) => ((b.info.savedAt || 0) - (a.info.savedAt || 0)));
+    for (const c of cands) { try { if (Game.load(c.slot)) return true; } catch (e) { /* try next */ } }
+    return false;
+  }
+
   function startGame(fid) {
     Game.newGame(fid, { historicalDeaths: $('#opt-hist-deaths').checked, difficulty: $('#opt-difficulty').value, scenario: scenarioId });
+    autosave();
     if (!fid) {
       selected = null;
       showGame();
@@ -236,7 +248,7 @@ const UI = (() => {
     stopAuto(); document.body.classList.remove('cinema');
     $('#game-screen').hidden = true;
     $('#start-screen').hidden = false;
-    $('#btn-continue').hidden = !Game.hasSave();
+    refreshContinue();
   }
 
   // ---------- rendering ----------
@@ -1082,6 +1094,7 @@ const UI = (() => {
     const S = Game.state();
     if (S.observer) {
       const notices = Game.endTurn();
+      autosave();
       renderAll();
       if (S.over) { stopAuto(); showGameOver(); return; }
       if (autoTimer) return;
@@ -1102,6 +1115,7 @@ const UI = (() => {
     const afterTurn = () => handleDecisions(() => handleTitle(() => handleSuccession(() => handleAid(() => handleProposals(() => handleCaptives(renderAll))))));
     const go = () => {
       const notices = Game.endTurn();
+      autosave();
       if (S.factions[S.player].guest) selected = null;
       renderAll();
       if (S.over) { if (notices.length) showNotices(notices, showGameOver); else showGameOver(); return; }
@@ -1288,13 +1302,13 @@ const UI = (() => {
         <button class="wide" data-act="tactical" title="헥스 전장에서 공성전을 하루씩 직접 전투; 끄면 전투가 즉시 결정됩니다">${Game.tacticalOn() ? '☑' : '☐'} 헥스맵 전술 전투</button>
         <button class="wide" data-act="watch" title="전투 보고에서 하루 단위 재연을 제공하도록 공성전을 기록">${Game.getOption('watchBattles') ? '☑' : '☐'} 재연용 전투 기록</button>
         <button class="wide" data-act="fog" title="전장에서 아군 주위 2헥스, 성벽·언덕·망루에서 3헥스가 보입니다; 숲·언덕·산의 유닛은 바로 옆에서만 보입니다">${Game.state().options && Game.state().options.fog === false ? '☐' : '☑'} 전투의 전장의 안개</button>
-        <button class="wide btn-red" data-act="quit">시작 화면으로 (저장 안 한 진행은 사라짐)</button>
+        <button class="wide btn-red" data-act="quit">시작 화면으로 (매달 자동 저장됨)</button>
       </div>
       <div class="modal-actions"><button class="btn btn-gold" data-act="close">닫기</button></div>`, {
       close: closeModal,
-      save: () => { Game.save(); closeModal(); toast('게임을 저장했습니다.'); },
+      save: () => { const ok = autosave(); closeModal(); toast(ok ? '게임을 저장했습니다. (매달 자동 저장됨)' : '저장 실패: 저장 공간이 부족합니다.'); },
       undo: () => { if (Game.undoMonth()) { closeModal(); selected = null; renderAll(); toast('이달이 다시 시작됩니다.'); } },
-      save1: () => { Game.save(1); closeModal(); toast('슬롯 1에 저장했습니다.'); }, save2: () => { Game.save(2); closeModal(); toast('슬롯 2에 저장했습니다.'); }, save3: () => { Game.save(3); closeModal(); toast('슬롯 3에 저장했습니다.'); },
+      save1: () => { const ok = Game.save(1); refreshContinue(); closeModal(); toast(ok ? '슬롯 1에 저장했습니다.' : '저장 실패: 저장 공간이 부족합니다.'); }, save2: () => { const ok = Game.save(2); refreshContinue(); closeModal(); toast(ok ? '슬롯 2에 저장했습니다.' : '저장 실패: 저장 공간이 부족합니다.'); }, save3: () => { const ok = Game.save(3); refreshContinue(); closeModal(); toast(ok ? '슬롯 3에 저장했습니다.' : '저장 실패: 저장 공간이 부족합니다.'); },
       load1: () => { if (Game.load(1)) { selected = null; closeModal(); renderAll(); toast('슬롯 1을 불러왔습니다.'); } }, load2: () => { if (Game.load(2)) { selected = null; closeModal(); renderAll(); toast('슬롯 2를 불러왔습니다.'); } }, load3: () => { if (Game.load(3)) { selected = null; closeModal(); renderAll(); toast('슬롯 3을 불러왔습니다.'); } },
       load: () => { if (Game.load()) { selected = null; closeModal(); renderAll(); toast('게임을 불러왔습니다.'); } else { closeModal(); toast('저장본이 예전 지도의 것이라 불러올 수 없습니다.'); } },
       quit: () => { closeModal(); backToMenu(); },
