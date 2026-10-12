@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Battle maps · Romance of the Three Kingdoms</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    body { overflow: auto; }
+    .hx-wrap { max-width: 1240px; margin: 0 auto; padding: 16px 18px 40px; }
+    .hx-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
+    .hx-head h1 { margin: 0; color: var(--gold2); font-size: 22px; }
+    .hx-head select { font-family: var(--serif); background: var(--panel2); color: var(--text); border: 1px solid var(--border); border-radius: 4px; padding: 6px 10px; font-size: 14px; }
+    .hx-main { display: flex; gap: 18px; flex-wrap: wrap; align-items: flex-start; }
+    .hx-map { background: #1e1913; border: 1px solid var(--border); border-radius: 8px; padding: 6px; box-shadow: var(--shadow); }
+    .hx-map svg { display: block; max-width: 100%; height: auto; }
+    .hx-side { flex: 1; min-width: 280px; max-width: 420px; }
+    .hx-side h2 { color: var(--gold2); font-size: 18px; margin: 0 0 6px; }
+    .hx-side .kv { font-size: 13px; }
+    table.hx { width: 100%; border-collapse: collapse; font-size: 12.5px; margin-top: 8px; }
+    table.hx th { text-align: left; color: var(--muted); font-weight: normal; border-bottom: 1px solid var(--border); padding: 3px 4px; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; }
+    table.hx td { padding: 3px 4px; border-bottom: 1px dotted #3d3327; }
+    table.hx td i { display: inline-block; width: 14px; height: 14px; border-radius: 3px; border: 1px solid rgba(255,255,255,0.25); vertical-align: -2px; margin-right: 6px; }
+    .hex { stroke: rgba(255, 235, 200, 0.10); stroke-width: 0.8; }
+    .hex.wall { stroke: rgba(255, 225, 160, 0.55); stroke-width: 1.2; }
+    .glyph { font-family: var(--serif); pointer-events: none; }
+    .river-bank { fill: none; stroke: #1e3a4a; stroke-linecap: round; stroke-linejoin: round; opacity: 0.85; }
+    .river { fill: none; stroke: #4f93b8; stroke-linecap: round; stroke-linejoin: round; }
+    .river-glint { fill: none; stroke: rgba(190, 230, 250, 0.45); stroke-linecap: round; stroke-linejoin: round; }
+    .lake { fill: #3f7fa3; stroke: rgba(190, 225, 240, 0.4); stroke-width: 1; }
+    .coast { fill: none; stroke: rgba(190, 225, 240, 0.55); stroke-width: 1.5; stroke-linejoin: round; }
+    .road-line { fill: none; stroke: rgba(212, 167, 71, 0.75); stroke-width: 2.2; stroke-dasharray: 5 4; stroke-linecap: round; stroke-linejoin: round; }
+    .road-line.bridge { stroke: #f0dcae; stroke-dasharray: 2 3; stroke-width: 3; }
+    .geo-label { font-family: var(--serif); font-style: italic; fill: rgba(200, 215, 225, 0.6); letter-spacing: 1px; pointer-events: none; }
+    .exit-label { font-family: var(--serif); font-size: 11px; fill: var(--gold2); font-style: italic; }
+    .exit-glyph { font-size: 12px; fill: #cfe6f0; }
+    .wall-line { fill: none; stroke: #3a2c18; stroke-width: 5; stroke-linecap: round; }
+    .wall-top { fill: none; stroke: #c9ad78; stroke-width: 2.4; stroke-linecap: round; }
+    .wall-inner .wall-line { stroke-width: 3.5; } .wall-inner .wall-top { stroke-width: 1.6; }
+    .tower { fill: #d9c08a; stroke: #3a2c18; stroke-width: 1; }
+    .gate { fill: #7a5a2c; stroke: #f0dcae; stroke-width: 1; }
+    .city-name { font-family: var(--serif); font-weight: bold; fill: #fff; text-shadow: 0 1px 2px #000; }
+    .owner-chip { stroke: rgba(0,0,0,0.6); stroke-width: 0.8; }
+    .unit { stroke: rgba(0,0,0,0.75); stroke-width: 1; }
+    .unit-n { font-family: var(--serif); font-weight: bold; fill: #fff; text-shadow: 0 1px 2px #000; pointer-events: none; }
+    .unit-o { font-family: var(--serif); fill: rgba(255,255,255,0.9); text-shadow: 0 1px 2px #000; pointer-events: none; }
+    .dep { margin-top: 10px; }
+    .dep select { font-family: var(--serif); background: var(--panel2); color: var(--text); border: 1px solid var(--border); border-radius: 4px; padding: 3px 6px; font-size: 12.5px; }
+    .dep .line { font-size: 12.5px; margin: 4px 0; line-height: 1.4; }
+    .site-ring { fill: rgba(0,0,0,0.35); stroke-width: 2; } .site-glyph { fill: #f0e6d0; font-family: var(--serif); pointer-events: none; } .site.ruined .site-glyph { opacity: 0.45; } .site-x { stroke: #e29a8f; stroke-width: 2; }
+    .coord { font-family: var(--serif); font-size: 7.5px; fill: rgba(255,255,255,0.4); }
+    .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; margin-top: 22px; }
+    .thumb { background: var(--panel); border: 1px solid var(--border); border-radius: 6px; padding: 5px; cursor: pointer; text-align: center; font-size: 12px; }
+    .thumb:hover, .thumb.sel { border-color: var(--gold); }
+    .thumb svg { display: block; width: 100%; height: auto; }
+    .hint { color: var(--muted); font-size: 12.5px; line-height: 1.45; }
+    .toggle { font-size: 12px; color: var(--muted); display: inline-flex; gap: 6px; align-items: center; }
+  </style>
+</head>
+<body>
+  <div class="hx-wrap">
+    <div class="hx-head">
+      <h1>Battle maps</h1>
+      <button class="btn" id="prev">◂</button>
+      <select id="city"></select>
+      <button class="btn" id="next">▸</button>
+      <label class="toggle"><input type="checkbox" id="coords"> coordinates</label>
+      <label class="toggle"><input type="checkbox" id="tints" checked> terrain tint</label>
+      <span class="toggle" id="state-note"></span>
+      <a class="btn" href="index.html" style="margin-left:auto;text-decoration:none">◂ Back to the game</a>
+    </div>
+    <p class="hint">Every city has a 13 × 12 hex battlefield of about 5 km hexes cut from the real ground around it: hillshaded relief at 130 m detail from the same elevation data as the strategic map, the true courses of rivers and coast, the walls at the centre, and roads leaving toward the cities that neighbour it on the strategic map. Attackers deploy at the road exit on the side their city lies; defenders hold the walls. Generated by <code>tools/buildhex.js</code>.</p>
+    <div class="hx-main">
+      <div class="hx-map"><svg id="map"></svg></div>
+      <div class="hx-side">
+        <h2 id="title"></h2>
+        <div id="meta"></div>
+        <div class="sec">Deployment</div>
+        <div class="dep" id="deploy"></div>
+        <table class="hx" id="legend"></table>
+        <p class="hint" style="margin-top:10px">Proposed rules: movement points per hex, the defence bonus to a unit standing in it, whether it blocks line of sight for archers, and whether cavalry may charge through it. Rivers are crossed only at bridges and fords (the pale dotted road) or by fleet-borne troops; mountains are impassable except along roads.</p>
+      </div>
+    </div>
+    <div class="gallery" id="gallery"></div>
+  </div>
+
+  <script src="js/eras.js"></script>
+  <script src="js/game.js"></script>
+  <script src="js/battle.js"></script>
+  <script src="js/hexview.js"></script>
+  <script>
+    const ORDER = ['p', 'a', 'f', 'h', 'm', 'w', 's', 'r', 'l', '~', 'G', 'W', 'C'];
+    const ruleText = (k) => { const R = BATTLE.TERRAIN[k]; return { move: R.move === null ? (BATTLE.navigable(k) ? 'full day' : '—') : String(R.move), def: R.move === null && !'CW'.includes(k) ? '—' : R.def === 0 ? '0' : `${R.def > 0 ? '+' : '−'}${Math.round(Math.abs(R.def) * 100)}%`, los: R.los ? 'yes' : 'no', cav: R.charge ? 'yes' : 'no', note: R.note }; };
+    let attackerFrom = null;   // exit id chosen for the deployment preview
+    const HEX_KM = 5, CC = 6, CR = 5;
+    const ids = PROVINCES.map((p) => p.id); const byId = Object.fromEntries(PROVINCES.map((p) => [p.id, p]));
+    const $ = (s) => document.querySelector(s);
+    let cur = location.hash ? location.hash.slice(1) : 'chenliu'; if (!HEXMAPS[cur]) cur = ids[0];
+    // the strategic situation: the player's saved game if there is one, otherwise the 190 start
+    let savedGame = false; try { savedGame = Game.hasSave() && Game.load(); } catch (e) { savedGame = false; }
+    if (!savedGame) Game.newGame(null);
+    const GS = Game.state(); const FREE = '#6e6a60';
+    const ownerOf = (id) => { const o = GS.provinces[id] && GS.provinces[id].owner; return o && GS.factions[o] ? GS.factions[o] : null; };
+    const ownerColor = (id) => { const f = ownerOf(id); return f ? f.color : FREE; };
+    $('#state-note').textContent = savedGame ? `showing your saved game, ${Game.dateStr()}` : 'showing the 190 start (no saved game)';
+    let uid = 0;
+
+    const TERRAIN = HEXVIEW.TERRAIN;
+    const render = (id, s, full) => HEXVIEW.render(id, s, full, { tints: $('#tints').checked, coords: $('#coords').checked, ownerOf, ownerColor });
+    const centre = HEXVIEW.centre, f1 = (v) => (Math.round(v * 10) / 10).toString();
+    function show(id) {
+      cur = id; location.hash = id; $('#city').value = id;
+      const m = HEXMAPS[id], P = byId[id]; const { svg, W, H } = render(id, 26, true);
+      const pad = 96; const el = $('#map'); el.setAttribute('viewBox', `${-pad} ${-40} ${W + 2 * pad} ${H + 80}`); el.setAttribute('width', W + 2 * pad); el.setAttribute('height', H + 80); el.innerHTML = svg;
+      $('#title').textContent = P.name;
+      const count = {}; for (const ch of m.terrain) count[ch] = (count[ch] || 0) + 1;
+      const gp = GS.provinces[id], owner = ownerOf(id); const offs = owner ? Game.officersIn(id, owner.id) : [];
+      $('#meta').innerHTML = `<div class="kv"><span>Held by</span><b>${owner ? `<span class="chip" style="background:${owner.color}"></span> ${owner.name}` : 'no one'}</b></div><div class="kv"><span>Garrison</span><b>${gp.troops.toLocaleString()} troops · walls ${gp.defense} · training ${gp.training}</b></div><div class="kv"><span>Officers present</span><b>${offs.map((o) => o.name).join(', ') || '—'}</b></div><div class="kv"><span>Tier</span><b>${['', 'town', 'city', 'great city'][P.tier]}</b></div><div class="kv"><span>Elevation</span><b>${m.elev} m</b></div><div class="kv"><span>Traits</span><b>${P.traits.map((t) => TRAIT_INFO[t].label).join(', ') || '—'}</b></div><div class="kv"><span>Roads out</span><b>${m.exits.map((e) => byId[e.to].name).join(', ')}</b></div><div class="kv"><span>Rivers</span><b>${[...new Set(m.rivers.filter((r) => r.n).map((r) => r.n))].join(', ') || '—'}</b></div><div class="kv"><span>Position</span><b>${P.lat.toFixed(2)}N ${P.lon.toFixed(2)}E</b></div>`;
+      $('#legend').innerHTML = `<tr><th>Terrain</th><th>Hexes</th><th>Move</th><th>Defence</th><th>Blocks sight</th><th>Charge</th></tr>` + ORDER.filter((k) => count[k]).map((k) => { const R = ruleText(k); return `<tr title="${R.note}"><td><i style="background:${TERRAIN[k].swatch}"></i>${TERRAIN[k].name}</td><td>${count[k]}</td><td>${R.move}</td><td>${R.def}</td><td>${R.los}</td><td>${R.cav}</td></tr>`; }).join('');
+      renderDeployment(id);
+      if (gp.sites && gp.sites.length) $('#map').insertAdjacentHTML('beforeend', HEXVIEW.sitesSvg(gp.sites, 26, () => (owner ? owner.color : FREE)));
+      document.querySelectorAll('.thumb').forEach((t) => t.classList.toggle('sel', t.dataset.id === id));
+    }
+    // ---- deployment preview: the garrison as it would stand, and an attacker from one of the roads ----
+    function armyOf(cityId, share) {
+      const gp = GS.provinces[cityId], owner = ownerOf(cityId);
+      const troops = Math.floor(gp.troops * share);
+      const offs = owner ? Game.officersIn(cityId, owner.id).filter((o) => share === 1 || !Game.isRuler(o)).sort((a, b) => (b.ldr + b.war) - (a.ldr + a.war)).slice(0, share === 1 ? 99 : 3) : [];
+      return { troops, owner, units: BATTLE.attachOfficers(BATTLE.splitArmy(troops), offs), officers: offs };
+    }
+    function renderDeployment(id) {
+      const m = HEXMAPS[id];
+      if (!attackerFrom || !m.exits.some((e) => e.to === attackerFrom)) { const hostile = m.exits.find((e) => { const a = ownerOf(e.to), d = ownerOf(id); return a && (!d || a.id !== d.id); }); attackerFrom = (hostile || m.exits[0] || {}).to || null; }
+      const def = armyOf(id, 1); const exit = m.exits.find((e) => e.to === attackerFrom); const att = exit ? armyOf(exit.to, 0.7) : null;
+      const who = (a) => (a.owner ? `<span class="chip" style="background:${a.owner.color}"></span> ${a.owner.name}` : 'the town militia');
+      const list = (a) => a.units.map((u, i) => `${u.troops.toLocaleString()}${u.officers.length ? ` (${u.officers.join(', ')})` : ''}`).join(' · ');
+      $('#deploy').innerHTML = `<div class="line"><b>Defender:</b> ${who(def)}, ${def.troops.toLocaleString()} troops → ${BATTLE.describeSplit(def.units.map((u) => u.troops))}.<br><span class="hint">${list(def) || '—'}</span></div>
+        <div class="line"><b>Attacker from</b> <select id="att-from">${m.exits.map((e) => `<option value="${e.to}"${e.to === attackerFrom ? ' selected' : ''}>${byId[e.to].name}${ownerOf(e.to) ? ` (${ownerOf(e.to).name})` : ' (unclaimed)'}</option>`).join('')}</select>${att ? `: ${who(att)} brings ${att.troops.toLocaleString()} troops (seven tenths of the garrison, as a strategic attack does) → ${BATTLE.describeSplit(att.units.map((u) => u.troops))}.<br><span class="hint">${list(att) || '—'}</span>` : ''}</div>
+        <div class="hint">Units are 5,000 strong, the remainder filling a smaller unit at the end; past twenty units the size rises to 6,000, 7,000 and so on until the army fits. Officers ride with the largest units, the best commander first. Defenders hold the gates, then the walls, then the city; attackers form up at their road's exit.</div>`;
+      $('#att-from').addEventListener('change', (e) => { attackerFrom = e.target.value; renderDeployment(id); });
+      // tokens on the map
+      const s = 26; const hw = Math.sqrt(3) * s; const svg = $('#map'); svg.querySelectorAll('.units').forEach((g) => g.remove());
+      let g = '<g class="units">';
+      const token = (c, r, u, color) => { const [cx, cy] = centre(c, r, s); const k = u.troops >= 1000 ? `${(u.troops / 1000).toFixed(u.troops % 1000 ? 1 : 0)}k` : u.troops; const o = u.officers.length ? u.officers[0] + (u.officers.length > 1 ? ` +${u.officers.length - 1}` : '') : ''; return `<rect class="unit" x="${f1(cx - hw * 0.42)}" y="${f1(cy - s * 0.5)}" width="${f1(hw * 0.84)}" height="${f1(s)}" rx="3" fill="${color}"/><text class="unit-n" x="${f1(cx)}" y="${f1(cy - 1)}" text-anchor="middle" style="font-size:9.5px">${k}</text>${o ? `<text class="unit-o" x="${f1(cx)}" y="${f1(cy + 8.5)}" text-anchor="middle" style="font-size:6.5px">${o}</text>` : ''}`; };
+      for (const u of BATTLE.deployDefender(m, def.units.map((x) => x.troops)).map((pos, i) => ({ ...pos, ...def.units[i] }))) g += token(u.c, u.r, u, def.owner ? def.owner.color : FREE);
+      if (att) for (const u of BATTLE.deployAttacker(m, exit, att.units.map((x) => x.troops)).map((pos, i) => ({ ...pos, ...att.units[i] }))) g += token(u.c, u.r, u, att.owner ? att.owner.color : FREE);
+      svg.insertAdjacentHTML('beforeend', g + '</g>');
+    }
+    const sorted = [...PROVINCES].sort((a, b) => a.name.localeCompare(b.name)).map((p) => p.id);
+    $('#city').innerHTML = sorted.map((id) => `<option value="${id}">${byId[id].name}</option>`).join('');
+    $('#city').addEventListener('change', (e) => show(e.target.value));
+    $('#prev').addEventListener('click', () => show(sorted[(sorted.indexOf(cur) + sorted.length - 1) % sorted.length]));
+    $('#next').addEventListener('click', () => show(sorted[(sorted.indexOf(cur) + 1) % sorted.length]));
+    $('#coords').addEventListener('change', () => show(cur));
+    $('#tints').addEventListener('change', () => show(cur));
+    document.addEventListener('keydown', (e) => { if (e.key === 'ArrowLeft') $('#prev').click(); if (e.key === 'ArrowRight') $('#next').click(); });
+    $('#gallery').innerHTML = sorted.map((id) => { const { svg, W, H } = render(id, 7, false); return `<div class="thumb" data-id="${id}"><svg viewBox="0 0 ${W} ${H}">${svg}</svg>${byId[id].name}</div>`; }).join('');
+    $('#gallery').addEventListener('click', (e) => { const t = e.target.closest('.thumb'); if (t) { show(t.dataset.id); window.scrollTo({ top: 0, behavior: 'smooth' }); } });
+    show(cur);
+  </script>
+</body>
+</html>

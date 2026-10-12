@@ -1,0 +1,16 @@
+{
+  "name": "삼국시대 — 고구려·백제·신라",
+  "short_name": "삼국시대",
+  "description": "한국 삼국시대(고구려·백제·신라·가야)를 무대로 한 턴제 전략 시뮬레이션.",
+  "start_url": "./?era=samguk",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "lang": "ko",
+  "background_color": "#1a1410",
+  "theme_color": "#1a1410",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
